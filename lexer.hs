@@ -187,7 +187,12 @@ data AST_Program        = AST_Program [AST_Function] deriving (Show)
 -- foldl doesn't really work..
 -- monads???
 
-parse_AST_Function :: [String] -> AST_Function
+--parseExpressions :: [String] -> AST_Expression
+--parseExpressions x:xs = 
 
-parse :: [String] -> AST_Program
+--parseFunctions :: [String] -> AST_Function
+--parseFunctions x:xs
+
+--parse :: [String] -> AST_Program
+--parse x = parse_AST_Functions x
 
