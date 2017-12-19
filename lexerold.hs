@@ -100,28 +100,42 @@ main' = do {
 }
 
 
+
+
+data TokenType = OB | CB | OP | CP | SC | TYPE_INT | RET | IDENTIFIER | INTLIT | UNKNOWN
+data Token = Token TokenType String
+
+instance Show Token where
+    show (Token _ str) = show str
+
 c_IDENT_FIRST = '_':['a'..'z'] ++ ['A'..'Z']
 c_IDENT_CHAR = c_IDENT_FIRST ++ ['0'..'9']
 
-lexIntLit :: String -> String -> [String]
+lexIntLit :: Token -> String -> [Token]
 lexIntLit t [] = [t]
-lexIntLit tokStr (x:xs)
-    | x `elem` ['0'..'9']   = lexIntLit (tokStr ++ [x]) xs
-    | otherwise             = tokStr:(lexer (x:xs))
+lexIntLit (Token INTLIT tokStr) (x:xs)
+    | x `elem` ['0'..'9']   = lexIntLit (Token INTLIT (tokStr ++ [x])) xs
+    | otherwise             = (Token INTLIT tokStr):lexer (x:xs)
 
-lexParseText :: String -> String -> [String]
+lexParseText :: Token -> String -> [Token]
 lexParseText t [] = [t]
-lexParseText tokStr (x:xs)
-    | x `elem` c_IDENT_CHAR = lexParseText (tokStr ++ [x]) xs
-    | otherwise             = tokStr:lexer (x:xs)
+lexParseText (Token UNKNOWN tokStr) (x:xs)
+    | x `elem` c_IDENT_CHAR = lexParseText (Token UNKNOWN (tokStr ++ [x])) xs
+    | otherwise             = case tokStr of
+                                "return" -> (Token RET "RET"):lexer (x:xs)
+                                "int"    -> (Token TYPE_INT "TYPE_INT"):lexer (x:xs)
+                                _        -> (Token IDENTIFIER tokStr):lexer (x:xs)
 
-lexer :: String -> [String]
+lexer :: String -> [Token]
 lexer []      = []
 lexer (x:xs)
-    | x `elem` "(){}[];,"       = [x]:lexer xs
-    | x == '0'                  = if head xs == 'x' then lexIntLit [x,'x'] (tail xs) else lexIntLit [x] xs
-    | x `elem` ['1'..'9']       = lexIntLit [x] xs
-    | x `elem` c_IDENT_FIRST    = lexParseText [x] xs
+    | '(' == x = (Token OB "("):lexer xs
+    | ')' == x = (Token CB ")"):lexer xs
+    | '{' == x = (Token OP "{"):lexer xs
+    | '}' == x = (Token CP "}"):lexer xs
+    | ';' == x = (Token SC ";"):lexer xs
+    | x `elem` ['0'..'9'] = lexIntLit (Token INTLIT [x]) xs
+    | x `elem` c_IDENT_FIRST = lexParseText (Token UNKNOWN [x]) xs
     | otherwise = lexer xs
 
 
@@ -170,9 +184,11 @@ data AST_Program        = AST_Program [AST_Function] deriving (Show)
 -- idk what to do here...
 -- gotta return a list of AST_Function
 -- gotta move through and return a function, then call that on remaining list, recursively
+-- foldl doesn't really work..
+-- monads???
 
---parseStatements :: [String] -> AST_Expression
---parseStatements x:xs = 
+--parseExpressions :: [String] -> AST_Expression
+--parseExpressions x:xs = 
 
 --parseFunctions :: [String] -> AST_Function
 --parseFunctions x:xs
