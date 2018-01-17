@@ -150,11 +150,10 @@ treeElem x (Node a left right)
     | x < a     = treeElem x left
     | x > a     = treeElem x right
 
-
-
 -- AST definition
 data AST_Expression     = LITERAL Int deriving (Show)
 data AST_Variable       = AST_Variable String deriving (Show)
+
 data AST_Statement      = RETURN AST_Expression | ASSIGN AST_Variable AST_Expression deriving (Show)
 
 data AST_Type           = INT | CHAR deriving (Show)
@@ -164,6 +163,7 @@ data AST_Function       = AST_Function {
                             args :: [(AST_Type, String)],
                             body :: [AST_Statement]
                             } deriving (Show)
+
 data AST_Program        = AST_Program [AST_Function] deriving (Show)
 
 -- production rules for recursive descent parsing
@@ -171,8 +171,12 @@ data AST_Program        = AST_Program [AST_Function] deriving (Show)
 -- gotta return a list of AST_Function
 -- gotta move through and return a function, then call that on remaining list, recursively
 
---parseStatements :: [String] -> AST_Expression
---parseStatements x:xs = 
+parseStatements :: [String] -> ([AST_Statements], [String])
+parseStatements x:xs = 
+                | x == "return" = RETURN (parseExpression xs)
+                |
+
+"return" <expression> ";"
 
 --parseFunctions :: [String] -> AST_Function
 --parseFunctions x:xs
