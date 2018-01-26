@@ -18,21 +18,26 @@ data AST_Compare        = E | LT | GT | LTE | GTE deriving (Show)
 -- Math operations
 data AST_Operation      = PLUS | MINUS | MULTIPLY | DIVIDE deriving (Show)
 
--- A variable has a type and label
-data AST_Variable       = AST_Variable AST_Type String deriving (Show)
+type AST_Label          = String
+
+-- A variable (declaration in a statement or arg list) has a type and label
+data AST_Variable       = AST_Variable AST_Type AST_Label deriving (Show)
 
 -- Expressions can have literals, identifiers, function calls, assignments or comparisons
-data AST_Expression     = EXPR_INT Int
-                        | EXPR_CHAR Char
-                        | EXPR_IDENT String
-                        | EXPR_CALL String [AST_Expression]
-                        | EXPR_ASSIGN AST_Variable AST_Expression
-                        | EXPR_COMPARE AST_Compare AST_Expression AST_Expression
-                        | EXPR_OPERATION AST_Operation AST_Expression AST_Expression
+data AST_Expression     = EXPR_INT Int                                                  -- int literal
+                        | EXPR_CHAR Char                                                -- char literal
+                        | EXPR_IDENT AST_Label                                          -- identifier
+                        | EXPR_CALL AST_Label [AST_Expression]                          -- function call
+                        | EXPR_ASSIGN AST_Label AST_Expression                          -- var = <expression>
+                        | EXPR_COMPARE AST_Compare AST_Expression AST_Expression        -- comparison operation
+                        | EXPR_OPERATION AST_Operation AST_Expression AST_Expression    -- math operation
                     deriving (Show)
 
 -- Statements can be flow control, raw expressions or variable declarations
-data AST_Statement      = WHILE AST_While | IF AST_If | RETURN AST_Expression | EXPR AST_Expression | DECLARE AST_Type AST_Variable deriving (Show)
+data AST_Statement      = RETURN AST_Expression                                         -- return <expression>;
+                        | EXPR AST_Expression                                           -- <expression>;
+                        | DECLARE AST_Variable                                          -- <type> <label>;
+                    deriving (Show) -- | WHILE AST_While | IF AST_If deriving (Show)
 
 data AST_While          = AST_While {
                             whileCond :: AST_Expression,
@@ -48,7 +53,7 @@ data AST_If             = AST_If {
 
 data AST_Function       = AST_Function {
                             funcType :: AST_Type,
-                            funcName :: String,
+                            funcName :: AST_Label,
                             funcArgs :: [AST_Variable],
                             funcBody :: [AST_Statement]
                             } deriving (Show)
@@ -91,9 +96,21 @@ parseArgs toks =
 
             _ -> ([], toks)
 
--- TODO implement properly
+parseStatement :: [Token] -> (AST_Statement, [Token])
+parseStatement [] = error "No tokens left to parse"
+parseStatement toks = ((DECLARE (AST_Variable TYPE_INT "TESTVAR")), toks)
+
 parseBody :: [Token] -> ([AST_Statement], [Token])
-parseBody toks = ([], toks)
+parseBody []    = error "No tokens left to parse"
+parseBody toks  =   case head toks of
+                        (Token TOK_MISC "}") ->
+                            ([], toks)
+                        _ ->
+                            let (statement, toks') = parseStatement toks
+                            in
+                                let (statementList, toks'') = parseBody toks'
+                                in
+                                    (statement:statementList, toks'')
 
 -- function definitions have a single word type, followd by an identifier, args, and a body
 parseFunction :: [Token] -> (AST_Function, [Token])
@@ -108,38 +125,30 @@ parseFunction toks =
             [(Token TOK_TYPE fType),(Token TOK_IDENT fId),(Token TOK_MISC "(")]  ->
 
                 -- parse args
-                let args = fst argOut                   -- [(AST_Type, String)]
-                    afterArgs = take 2 (snd argOut)     -- two tokens for ")" "{"
-                    bodyToks = drop 2 (snd argOut)      -- the body
+                let 
+                    (args, toks') = parseArgs afterSig
                 in
-                    case afterArgs of
-                        -- match the close of the args paren ")" and the start of the body "{"
-                        [(Token TOK_MISC ")"),(Token TOK_MISC "{")] ->
-                            let body = fst bodyOut
-                                afterBody = head (snd bodyOut)
-                                remainingToks = tail (snd bodyOut)
-                            in
-                                case afterBody of
+                    let
+                        afterArgs = take 2 toks'
+                        bodyToks = drop 2 toks'
+                    in
+                        case afterArgs of
+                            -- match the close of the args paren ")" and the start of the body "{"
+                            [(Token TOK_MISC ")"),(Token TOK_MISC "{")] ->
+                                let (body, toks'') = parseBody bodyToks
+                                in
+                                    case head toks'' of
 
-                                    -- match the closing brace "}"
-                                    (Token TOK_MISC "}") ->
-                                        -- finally, return the tuple
-                                        (AST_Function {
-                                            funcType = parseType fType,
-                                            funcName = fId,
-                                            funcArgs = args,
-                                            funcBody = body
-                                        }, remainingToks)
+                                        -- match the closing brace "}"
+                                        (Token TOK_MISC "}") ->
+                                            -- finally, return the tuple
+                                            (AST_Function {
+                                                funcType = parseType fType,
+                                                funcName = fId,
+                                                funcArgs = args,
+                                                funcBody = body
+                                            }, tail toks'')
 
---                                    _ -> error "Function does not terminate properly"
-
-                            where bodyOut = parseBody bodyToks
-
---                        _ -> tError "Invalid function signature"
-
-                where argOut = parseArgs afterSig
-
---            _ -> error "Invalid function signature"
 
 parseFunctions :: [Token] -> [AST_Function]
 parseFunctions [] = []
