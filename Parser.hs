@@ -24,19 +24,19 @@ type AST_Label          = String
 data AST_Variable       = AST_Variable AST_Type AST_Label deriving (Show)
 
 -- Expressions can have literals, identifiers, function calls, assignments or comparisons
-data AST_Expression     = EXPR_INT Int                                                  -- int literal
-                        | EXPR_CHAR Char                                                -- char literal
-                        | EXPR_IDENT AST_Label                                          -- identifier
-                        | EXPR_CALL AST_Label [AST_Expression]                          -- function call
-                        | EXPR_ASSIGN AST_Label AST_Expression                          -- var = <expression>
-                        | EXPR_COMPARE AST_Compare AST_Expression AST_Expression        -- comparison operation
-                        | EXPR_OPERATION AST_Operation AST_Expression AST_Expression    -- math operation
+data AST_Expression     = EXPR_INT Int                                                  -- <int literal>
+                        | EXPR_CHAR Char                                                -- <char literal>
+                        | EXPR_IDENT AST_Label                                          -- <label>
+                        | EXPR_CALL AST_Label [AST_Expression]                          -- <label>(<args>)
+                        | EXPR_ASSIGN AST_Label AST_Expression                          -- <label> = <expression>
+                        | EXPR_COMPARE AST_Compare AST_Expression AST_Expression        -- <expression> <comparison operator> <expression>
+                        | EXPR_OPERATION AST_Operation AST_Expression AST_Expression    -- <expression> <math operator> <expression>
                     deriving (Show)
 
 -- Statements can be flow control, raw expressions or variable declarations
-data AST_Statement      = RETURN AST_Expression                                         -- return <expression>;
-                        | EXPR AST_Expression                                           -- <expression>;
-                        | DECLARE AST_Variable                                          -- <type> <label>;
+data AST_Statement      = STAT_RETURN AST_Expression                                         -- return <expression>;
+                        | STAT_EXPR AST_Expression                                           -- <expression>;
+                        | STAT_DECLARE AST_Variable                                          -- <type> <label>;
                     deriving (Show) -- | WHILE AST_While | IF AST_If deriving (Show)
 
 data AST_While          = AST_While {
@@ -96,9 +96,36 @@ parseArgs toks =
 
             _ -> ([], toks)
 
+parseExpression :: [Token] -> (AST_Expression, [Token])
+parseExpression []   = error "No tokens left to parse"
+parseExpression toks =  case head toks of
+                            
+
+
 parseStatement :: [Token] -> (AST_Statement, [Token])
-parseStatement [] = error "No tokens left to parse"
-parseStatement toks = ((DECLARE (AST_Variable TYPE_INT "TESTVAR")), toks)
+parseStatement []   = error "No tokens left to parse"
+parseStatement toks =   case head toks of
+                            (Token TOK_TYPE _) ->
+                                let decl = take 3 toks
+                                    toks' = drop 3 toks
+                                in
+                                    case decl of
+                                        [(Token TOK_TYPE vType),(Token TOK_IDENT vId),(Token TOK_MISC ";")] ->
+                                            ((STAT_DECLARE (AST_Variable (parseType vType) vId)), toks')
+                                        _ -> error "Failed to parse declaration"
+                            (Token TOK_KEYWORD keyword) ->
+                                let toks' = tail toks
+                                in
+                                    case keyword of
+                                        "return" ->
+                                            let (expr, toks'') = parseExpression toks'
+                                            in
+                                                case head toks'' of
+                                                    (Token TOK_MISC ";") ->
+                                                        ((STAT_RETURN expr, tail toks'')
+                                                    _ -> error "Failed to parse return statement"
+                                    -> error "Unknown keyword"
+                            _ -> error "Unknown statement type"
 
 parseBody :: [Token] -> ([AST_Statement], [Token])
 parseBody []    = error "No tokens left to parse"
