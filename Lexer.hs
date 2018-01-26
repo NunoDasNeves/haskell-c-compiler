@@ -1,7 +1,4 @@
-module Lexer
-(TokenType,
-Token,
-lexer) where
+module Lexer where
 
 data TokenType = TOK_MISC | TOK_TYPE | TOK_IDENT | TOK_KEYWORD | TOK_OPERATOR | TOK_INT | TOK_DOUBLE | TOK_CHAR | TOK_STRING deriving (Show)
 data Token = Token {

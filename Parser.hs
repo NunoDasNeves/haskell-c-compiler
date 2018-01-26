@@ -49,7 +49,7 @@ data AST_If             = AST_If {
 data AST_Function       = AST_Function {
                             funcType :: AST_Type,
                             funcName :: String,
-                            funcArgs :: [(AST_Type, String)],
+                            funcArgs :: [AST_Variable],
                             funcBody :: [AST_Statement]
                             } deriving (Show)
 
@@ -59,7 +59,45 @@ data AST_Program        = AST_Program [AST_Function] deriving (Show)
 -- Recursive descent parsing
 -- Each function returns the unconsumed part of the token list
 
+-- types are a single string
+parseType :: String -> AST_Type
+parseType s = case s of
+                "int"   -> TYPE_INT
+                "char"  -> TYPE_CHAR
+--                _       -> error "Invalid type \"" ++ s ++ "\""
+
+-- function arguments must be (type, identifier) followed by a "," or ")"
+parseArgs :: [Token] -> ([AST_Variable], [Token])
+parseArgs [] = error "No tokens left to parse!"
+parseArgs toks =
+    let arg = take 2 toks
+        afterArg = drop 2 toks
+    in
+        case arg of
+            [(Token TOK_TYPE tStr),(Token TOK_IDENT iStr)] ->
+                case head afterArg of
+
+                    -- if "," recursively get rest of args
+                    (Token TOK_MISC ",") -> 
+                        let remainingArgs   = fst argOut
+                            remainingTokens = snd argOut
+                        in
+                            ((AST_Variable (parseType tStr) iStr):remainingArgs, remainingTokens)
+                            where argOut = parseArgs (tail afterArg) -- skip the ","
+
+                    -- otherwise, we're done and can return a single element list with the final arg
+                    _ -> 
+                        ([(AST_Variable (parseType tStr) iStr)], afterArg)    -- keep the ")"
+
+            _ -> ([], toks)
+
+-- TODO implement properly
+parseBody :: [Token] -> ([AST_Statement], [Token])
+parseBody toks = ([], toks)
+
+-- function definitions have a single word type, followd by an identifier, args, and a body
 parseFunction :: [Token] -> (AST_Function, [Token])
+parseFunction [] = error "No tokens left to parse"
 parseFunction toks = 
     -- get 3 tokens for (first part of) signature
     let sig = take 3 toks
@@ -68,34 +106,45 @@ parseFunction toks =
         case sig of
             -- match (type, identifier, "(")
             [(Token TOK_TYPE fType),(Token TOK_IDENT fId),(Token TOK_MISC "(")]  ->
+
                 -- parse args
                 let args = fst argOut                   -- [(AST_Type, String)]
                     afterArgs = take 2 (snd argOut)     -- two tokens for ")" "{"
                     bodyToks = drop 2 (snd argOut)      -- the body
-                    where argOut = parseArgs afterSig
                 in
-                    case bodyToks of
+                    case afterArgs of
                         -- match the close of the args paren ")" and the start of the body "{"
-                        [(Token TOK_MISC "("),(Token TOK_MISC "{")] ->
-                        let body = fst bodyOut
-                            afterBody = head (snd bodyOut)
-                            remainingToks = tail (snd bodyOut)
-                            where bodyOut = parseExpressions bodyToks
-                        in
-                            case afterBody of
-                                -- match the closing brace "}"
-                                (Token TOK_MISC "}") ->
-                                    -- finally, return the tuple
-                                    (AST_Function {
-                                        funcType = parseType t,
-                                        funcName = ident,
-                                        funcArgs = args,
-                                        funcBody = body
-                                    }, remainingToks)
-                                _ -> error "Function does not terminate properly"
-                    _ -> error "Invalid function signature"
-            _ -> error "Invalid function signature"
+                        [(Token TOK_MISC ")"),(Token TOK_MISC "{")] ->
+                            let body = fst bodyOut
+                                afterBody = head (snd bodyOut)
+                                remainingToks = tail (snd bodyOut)
+                            in
+                                case afterBody of
+
+                                    -- match the closing brace "}"
+                                    (Token TOK_MISC "}") ->
+                                        -- finally, return the tuple
+                                        (AST_Function {
+                                            funcType = parseType fType,
+                                            funcName = fId,
+                                            funcArgs = args,
+                                            funcBody = body
+                                        }, remainingToks)
+
+--                                    _ -> error "Function does not terminate properly"
+
+                            where bodyOut = parseBody bodyToks
+
+--                        _ -> tError "Invalid function signature"
+
+                where argOut = parseArgs afterSig
+
+--            _ -> error "Invalid function signature"
+
+parseFunctions :: [Token] -> [AST_Function]
+parseFunctions [] = []
+parseFunctions toks = (fst ret):parseFunctions (snd ret) where ret = parseFunction toks
 
 parse :: [Token] -> AST_Program
-parse toks = AST_Program (fst ret):parse (snd ret) where ret = parseFunction toks
+parse toks = AST_Program (parseFunctions toks)
 
