@@ -7,36 +7,46 @@ AST_Program
 import Lexer
 
 -- AST definition
--- No globals (gotta make program a list of statements)
+
+type AST_Label          = String
 
 -- Supported types
-data AST_Type           = TYPE_INT | TYPE_CHAR deriving (Show)
+data AST_Type           = TYPE_INT
+                        | TYPE_CHAR
+                        | TYPE_INT_PTR
+                        | TYPE_CHAR_PTR
+                        | TYPE_INT_ARRAY Int    -- array size
+                        | TYPE_CHAR_ARRAY Int   -- array size
+                    deriving (Show)
 
 -- Comparisons == < > <= >=
 data AST_Compare        = COMP_E | COMP_LT | COMP_GT | COMP_LTE | COMP_GTE deriving (Show)
 
--- Math operations
-data AST_Operation      = OP_PLUS | OP_MINUS | OP_MULTIPLY | OP_DIVIDE deriving (Show)
-
-type AST_Label          = String
+-- Math and logical operators
+data AST_Operator      = OP_PLUS | OP_MINUS | OP_MULTIPLY | OP_DIVIDE | OP_NOT deriving (Show)
 
 -- A variable (declaration in a statement or arg list) has a type and label
 data AST_Variable       = AST_Variable AST_Type AST_Label deriving (Show)
 
+data AST_Literal        = LIT_INT Int | LIT_CHAR Char | LIT_CHAR_PTR String deriving (Show)
+
 -- Expressions can have literals, identifiers, function calls, assignments or comparisons
-data AST_Expression     = EXPR_INT Int                                                  -- <int literal>
-                        | EXPR_CHAR Char                                                -- <char literal>
+data AST_Expression     = EXPR_LITERAL AST_Literal                                      -- <int literal>
                         | EXPR_IDENT AST_Label                                          -- <label>
                         | EXPR_CALL AST_Label [AST_Expression]                          -- <label>(<args>)
-                        | EXPR_ASSIGN AST_Expression AST_Expression                     -- <expression> = <expression> (expression on left side must be ident)
+                        | EXPR_ASSIGN AST_Expression AST_Expression                     -- <expression> = <expression> (left side must be ident or deref)
                         | EXPR_COMPARE AST_Compare AST_Expression AST_Expression        -- <expression> <comparison operator> <expression>
-                        | EXPR_OPERATION AST_Operation AST_Expression AST_Expression    -- <expression> <math operator> <expression>
+                        | EXPR_BIN_OPERATION AST_Operator AST_Expression AST_Expression -- <expression> <math operator> <expression>
+                        | EXPR_UN_OPERATION AST_Operator AST_Expression                 -- !<expression>, ~<expression>
+                        | EXPR_PTR_DEREF AST_Expression                                 -- *<expression> (allow dereference anything?)
+                        | EXPR_PTR_GET AST_Label                                        -- &<label>
                     deriving (Show)
 
 -- Statements can be flow control, raw expressions or variable declarations
 data AST_Statement      = STAT_RETURN AST_Expression                                         -- return <expression>;
-                        | STAT_EXPR AST_Expression                                           -- <expression>;
+                        | STAT_EXPR AST_Expression                                           -- <label> = <expression>; (only assignment allowed)
                         | STAT_DECLARE AST_Variable                                          -- <type> <label>;
+                        | STAT_DECLARE_ASSIGN AST_Variable AST_Expression                    -- <type> <label> = <expression>;
                         | STAT_WHILE AST_While
                         | STAT_IF AST_If
                     deriving (Show)
@@ -154,7 +164,7 @@ parseExpression (tok:toks) =
                     -- math
                     "+" ->
                         let (nextExpr, toks'') = parseExpression $ tail toks'
-                        in (EXPR_OPERATION OP_PLUS expr nextExpr, toks'')
+                        in (EXPR_BIN_OPERATION OP_PLUS expr nextExpr, toks'')
 
                     _ -> error "Invalid operator, or operator not supported yet"
             _ -> error $ "Invalid token " ++ show (head toks') ++ " following expression"

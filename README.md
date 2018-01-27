@@ -32,3 +32,4 @@ First time writing Haskell or a compiler.
 * No operator precedence planned...everything is currently right-associative. Use ()!
 * No preprocessor planned (no #defines, #includes etc
 * No program arguments (no char\*\*)
+* No comments! These would be easy to add (only requires changes to lexer) but it's just more time

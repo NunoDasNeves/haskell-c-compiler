@@ -13,9 +13,9 @@ c_MISC = "(){}[];,"
 
 c_IDENT_FIRST = '_':['a'..'z'] ++ ['A'..'Z']
 c_IDENT_CHAR = c_IDENT_FIRST ++ ['0'..'9']
-c_KEYWORDS = ["if","else","while","return"]
+c_KEYWORDS = ["if","while","return"]--"else","__syscall"
 c_TYPES = ["int", "char"]
-c_OPERATORS = "=><*^&%!~:|+-."
+c_OPERATORS = "=><*/&!+-"--"^%~|.?:"
 
 
 -- strings!
