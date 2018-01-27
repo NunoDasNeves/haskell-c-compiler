@@ -154,26 +154,9 @@ parseExpression (tok:toks) =
                         in (EXPR_OPERATION PLUS expr nextExpr, toks'')
 
                     _ -> error "Invalid operator, or operator not supported yet"
-                        
             _ -> error $ "Invalid token " ++ show (head toks') ++ " following expression"
--- some rough examples of what this should parse
--- x
--- 1
--- 'a'
--- x = 1
--- <expr assign <expr var> <expr int>
--- x = 1 + 1
--- <expr assign <expr var> <expr operation <expr int> <expr int>>>
--- x == (1 + 1)
--- <expr compare <expr var> <expr operation <expr int> <expr int>>>
--- 1 - x
--- <expr operation <expr int> <expr var>>
--- x >= foo()
--- foo(1+1, x)
--- <expr call <ident> [<expr operation + <expr int 1> <expr int 1>>, <expr var>]>
--- x = 1 + 2 + 3
--- <expr assign <expr var x> <expr operation + <expr int 1> <expr operation + <expr int 2> <expr int 3>>>>   
 
+-- parse a semicolon-terminated statement
 parseStatement :: [Token] -> (AST_Statement, [Token])
 parseStatement []   = error "No tokens left to parse"
 parseStatement toks =
@@ -197,10 +180,22 @@ parseStatement toks =
                                 (Token TOK_MISC ";") ->
                                     (STAT_RETURN expr, tail toks'')
                                 _ -> error "Failed to parse return statement"
+                    -- TODO if, while
                     _ -> error "Unknown keyword"
-        -- TODO identifiers!
+        (Token TOK_IDENT ident) ->
+            let (expr, toks') = parseExpression toks
+            in
+                case expr of
+                    (EXPR_ASSIGN _ _) ->
+                        case head toks' of
+                            (Token TOK_MISC ";") ->
+                                (STAT_EXPR expr, tail toks')
+                            _ -> error "Failed to parse assignment statement"
+                    _ -> error "Statement expressions can only be assignments"
+            
         _ -> error "Unknown statement type"
 
+-- parse a semicolon-delimited list of statements
 parseBody :: [Token] -> ([AST_Statement], [Token])
 parseBody []    = error "No tokens left to parse"
 parseBody toks  = 
@@ -252,10 +247,12 @@ parseFunction toks =
                                             }, tail toks'')
 
 
+-- parse a list of functions
 parseFunctions :: [Token] -> [AST_Function]
 parseFunctions [] = []
 parseFunctions toks = (fst ret):parseFunctions (snd ret) where ret = parseFunction toks
 
+-- the top-level parse function!
 parse :: [Token] -> AST_Program
 parse toks = AST_Program (parseFunctions toks)
 

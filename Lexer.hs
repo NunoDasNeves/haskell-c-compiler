@@ -13,7 +13,7 @@ c_MISC = "(){}[];,"
 
 c_IDENT_FIRST = '_':['a'..'z'] ++ ['A'..'Z']
 c_IDENT_CHAR = c_IDENT_FIRST ++ ['0'..'9']
-c_KEYWORDS = ["if","else","goto","return"]
+c_KEYWORDS = ["if","else","while","return"]
 c_TYPES = ["int", "char"]
 c_OPERATORS = "=><*^&%!~:|+-."
 
