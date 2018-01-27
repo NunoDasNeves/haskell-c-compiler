@@ -69,5 +69,6 @@ lexer (x:xs)
     | x == '0'                  = if head xs == 'x' then lexParseNum "0x" (tail xs) else lexParseNum "0" xs
     | x `elem` ['1'..'9']       = lexParseNum [x] xs
     | x `elem` c_IDENT_FIRST    = lexParseText [x] xs
+    | x `elem` c_OPERATORS      = lexParseOperator [x] xs
     | otherwise = lexer xs
 
