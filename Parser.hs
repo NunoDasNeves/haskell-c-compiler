@@ -135,7 +135,7 @@ parseExpression (tok:toks) =
             (Token TOK_MISC aChar) | aChar `elem` [")",";",","]  ->
                 (expr, toks')
             -- Wait, there's an operator! so it's actually a larger expression!
-            (Token TOK_OPERATOR op) | op `elem` ["==",">=","<=",">","<","+","-","*","/"] ->
+            (Token TOK_OPERATOR op) | op `elem` ["==",">=","<=",">","<","+","-","*","/","="] ->
                 case op of
                     -- assignment; first expression must be identifier
                     "=" ->
