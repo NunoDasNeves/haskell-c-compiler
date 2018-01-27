@@ -13,10 +13,10 @@ import Lexer
 data AST_Type           = TYPE_INT | TYPE_CHAR deriving (Show)
 
 -- Comparisons == < > <= >=
-data AST_Compare        = E | LT | GT | LTE | GTE deriving (Show)
+data AST_Compare        = COMP_E | COMP_LT | COMP_GT | COMP_LTE | COMP_GTE deriving (Show)
 
 -- Math operations
-data AST_Operation      = PLUS | MINUS | MULTIPLY | DIVIDE deriving (Show)
+data AST_Operation      = OP_PLUS | OP_MINUS | OP_MULTIPLY | OP_DIVIDE deriving (Show)
 
 type AST_Label          = String
 
@@ -37,7 +37,9 @@ data AST_Expression     = EXPR_INT Int                                          
 data AST_Statement      = STAT_RETURN AST_Expression                                         -- return <expression>;
                         | STAT_EXPR AST_Expression                                           -- <expression>;
                         | STAT_DECLARE AST_Variable                                          -- <type> <label>;
-                    deriving (Show) -- | WHILE AST_While | IF AST_If deriving (Show)
+                        | STAT_WHILE AST_While
+                        | STAT_IF AST_If
+                    deriving (Show)
 
 data AST_While          = AST_While {
                             whileCond :: AST_Expression,
@@ -46,9 +48,9 @@ data AST_While          = AST_While {
 
 data AST_If             = AST_If {
                             ifCond :: AST_Expression,
-                            ifBody :: [AST_Statement],
-                            ifElseIf :: [[AST_Statement]],
-                            ifElse :: [AST_Statement]
+                            ifBody :: [AST_Statement]--,
+                            --ifElseIf :: [[AST_Statement]],
+                            --ifElse :: [AST_Statement]
                             } deriving (Show)
 
 data AST_Function       = AST_Function {
@@ -100,6 +102,7 @@ parseArgs toks =
 parseExpression :: [Token] -> (AST_Expression, [Token])
 parseExpression []   = error "No tokens left to parse"
 parseExpression (tok:toks) =
+    -- for whatever reason this needs to be indented like this apparently
     let (expr, toks') = case tok of
                             -- if a paren is opened, get the inner expression first, then continue
                             (Token TOK_MISC "(") ->
@@ -147,11 +150,11 @@ parseExpression (tok:toks) =
                     -- comparison
                     "==" ->
                         let (nextExpr, toks'') = parseExpression $ tail toks'
-                        in (EXPR_COMPARE E expr nextExpr, toks'')
+                        in (EXPR_COMPARE COMP_E expr nextExpr, toks'')
                     -- math
                     "+" ->
                         let (nextExpr, toks'') = parseExpression $ tail toks'
-                        in (EXPR_OPERATION PLUS expr nextExpr, toks'')
+                        in (EXPR_OPERATION OP_PLUS expr nextExpr, toks'')
 
                     _ -> error "Invalid operator, or operator not supported yet"
             _ -> error $ "Invalid token " ++ show (head toks') ++ " following expression"
@@ -180,7 +183,28 @@ parseStatement toks =
                                 (Token TOK_MISC ";") ->
                                     (STAT_RETURN expr, tail toks'')
                                 _ -> error "Failed to parse return statement"
-                    -- TODO if, while
+                    x | x `elem` ["if", "while"] ->
+                        case head toks' of
+                            (Token TOK_MISC "(") ->
+                                let (expr, toks'') = parseExpression $ tail toks'
+                                in
+                                    let nextTwo = take 2 toks''
+                                        toks''' = drop 2 toks''
+                                    in
+                                        case nextTwo of
+                                            [(Token TOK_MISC ")"),(Token TOK_MISC "{")] ->
+                                                let (statements, toks'''') = parseBody toks'''
+                                                in
+                                                    case head toks'''' of
+                                                        (Token TOK_MISC "}") ->
+                                                            if keyword == "if"
+                                                            then
+                                                                (STAT_IF (AST_If expr statements), tail toks'''')
+                                                            else
+                                                                (STAT_WHILE (AST_While expr statements), tail toks'''')
+                                                        _ -> error "Invalid if/while statement"
+                                            _ -> error "Invalid tokens after if/while expression"
+                            _ -> error "Invalid if/while statement"
                     _ -> error "Unknown keyword"
         (Token TOK_IDENT ident) ->
             let (expr, toks') = parseExpression toks
@@ -192,8 +216,7 @@ parseStatement toks =
                                 (STAT_EXPR expr, tail toks')
                             _ -> error "Failed to parse assignment statement"
                     _ -> error "Statement expressions can only be assignments"
-            
-        _ -> error "Unknown statement type"
+        _ -> error $ "Unknown statement type" ++ show (head toks)
 
 -- parse a semicolon-delimited list of statements
 parseBody :: [Token] -> ([AST_Statement], [Token])
