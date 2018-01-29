@@ -21,7 +21,7 @@ First time writing Haskell or a compiler.
     * Wanna keep this simple, might add else as well
 * Types: int, int\*, int[], char, char\*, char[]
     * Probably will support & for getting variable addresses too
-* Basic asm support, so we can do syscalls and such
+* Basic inline asm support, so we can do syscalls and such
     * Might just do a syscall() keyword instead..hmm
 
 ##(Planned) Limitations
@@ -33,3 +33,7 @@ First time writing Haskell or a compiler.
 * No preprocessor planned (no #defines, #includes etc
 * No program arguments (no char\*\*)
 * No comments! These would be easy to add (only requires changes to lexer) but it's just more time
+* No function pointers
+* No structs
+* No casts
+* No array {} initialization

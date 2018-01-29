@@ -1,6 +1,6 @@
 module Lexer where
 
-data TokenType = TOK_MISC | TOK_TYPE | TOK_IDENT | TOK_KEYWORD | TOK_OPERATOR | TOK_INT | TOK_DOUBLE | TOK_CHAR | TOK_STRING deriving (Show)
+data TokenType = TOK_MISC | TOK_TYPE | TOK_IDENT | TOK_KEYWORD | TOK_OPERATOR | TOK_INT | TOK_CHAR | TOK_STRING deriving (Show)
 data Token = Token {
                     tokenType :: TokenType,
                     valueString :: String
@@ -15,7 +15,11 @@ c_IDENT_FIRST = '_':['a'..'z'] ++ ['A'..'Z']
 c_IDENT_CHAR = c_IDENT_FIRST ++ ['0'..'9']
 c_KEYWORDS = ["if","while","return"]--"else","__syscall"
 c_TYPES = ["int", "char"]
-c_OPERATORS = "=><*/&!+-"--"^%~|.?:"
+c_OPERATOR_START = "=><*/&!+-"--"^%~|.?:"
+c_OPERATORS = ["=",
+            "==",">","<","<=",">=","!=",
+            "*","/","+","-",
+            "!", "&"]--"
 
 
 -- strings!
@@ -26,13 +30,13 @@ lexParseString tokStr (x:xs)
     | x == '\"'             = (Token TOK_STRING tokStr):lexer xs
     | otherwise             = lexParseString (tokStr ++ [x]) xs
 
-
 -- operators
-lexParseOperator :: String -> String -> [Token]
+-- 1-2 characters only, so we just handle those cases
+lexParseOperator :: Char -> String -> [Token]
 lexParseOperator t [] = error "Lexer couldn't parse operator"
-lexParseOperator tokStr (x:xs)
-    | x `elem` c_OPERATORS  = lexParseOperator (tokStr ++ [x]) xs
-    | otherwise             = (Token TOK_OPERATOR tokStr):lexer (x:xs)
+lexParseOperator tokChar (x:xs)
+    | [tokChar,x] `elem` c_OPERATORS    = (Token TOK_OPERATOR [tokChar,x]):lexer xs
+    | otherwise                         = (Token TOK_OPERATOR [tokChar]):lexer (x:xs)
 
 -- chars - give this a string starting with the char, as in "a'"
 lexParseChar :: String -> [Token]
@@ -69,6 +73,6 @@ lexer (x:xs)
     | x == '0'                  = if head xs == 'x' then lexParseNum "0x" (tail xs) else lexParseNum "0" xs
     | x `elem` ['1'..'9']       = lexParseNum [x] xs
     | x `elem` c_IDENT_FIRST    = lexParseText [x] xs
-    | x `elem` c_OPERATORS      = lexParseOperator [x] xs
+    | x `elem` c_OPERATOR_START = lexParseOperator x xs
     | otherwise = lexer xs
 
