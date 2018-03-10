@@ -1,6 +1,6 @@
 # Haskell C Compiler
 
-##About
+## About
 
 Writing a (very simple) C compiler in Haskell based on these tutorials and other resources:
 - http://learnyouahaskell.com
@@ -11,7 +11,7 @@ Writing a (very simple) C compiler in Haskell based on these tutorials and other
 
 First time writing Haskell or a compiler.
 
-##(Planned) Features
+## (Planned) Features
 
 * Lexer -> Parser -> Semantic Analyzer -> x86 assembly generator
     * Assembly will be fed into GCC to produce machine code
@@ -24,7 +24,7 @@ First time writing Haskell or a compiler.
 * Basic inline asm support, so we can do syscalls and such
     * Might just do a syscall() keyword instead..hmm
 
-##(Planned) Limitations
+## (Planned) Limitations
 
 * No global variables planned. A program is just a list of functions
     * Might change my mind on this
