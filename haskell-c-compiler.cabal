@@ -10,7 +10,7 @@ description:    Please see the README on Github at <https://github.com/NunoDasNe
 homepage:       https://github.com/NunoDasNeves/haskell-c-compiler#readme
 bug-reports:    https://github.com/NunoDasNeves/haskell-c-compiler/issues
 author:         Nuno Das Neves
--- maintainer:     example@example.com
+maintainer:     ndasneves@gmail.com
 copyright:      2018 Nuno Das Neves
 license:        BSD3
 license-file:   LICENSE

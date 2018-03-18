@@ -3,7 +3,7 @@ version:             0.1.0.0
 github:              "NunoDasNeves/haskell-c-compiler"
 license:             BSD3
 author:              "Nuno Das Neves"
-# maintainer:          "example@example.com"
+maintainer:          "ndasneves@gmail.com"
 copyright:           "2018 Nuno Das Neves"
 
 extra-source-files:
