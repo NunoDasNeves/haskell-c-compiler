@@ -1,0 +1,64 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 4f14c80bc8d08be0a05d7323fe6488dfd6a0721be6c1cf55d1492dfc78bc14b7
+
+name:           haskell-c-compiler
+version:        0.1.0.0
+description:    Please see the README on Github at <https://github.com/NunoDasNeves/haskell-c-compiler#readme>
+homepage:       https://github.com/NunoDasNeves/haskell-c-compiler#readme
+bug-reports:    https://github.com/NunoDasNeves/haskell-c-compiler/issues
+author:         Nuno Das Neves
+maintainer:     ndasneves@gmail.com
+copyright:      2018 Nuno Das Neves
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    ChangeLog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/NunoDasNeves/haskell-c-compiler
+
+library
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  exposed-modules:
+      Lib
+  other-modules:
+      Lexer
+      Parser
+      Paths_haskell_c_compiler
+  default-language: Haskell2010
+
+executable haskell-c-compiler-exe
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , haskell-c-compiler
+  other-modules:
+      Paths_haskell_c_compiler
+  default-language: Haskell2010
+
+test-suite haskell-c-compiler-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , haskell-c-compiler
+  other-modules:
+      Paths_haskell_c_compiler
+  default-language: Haskell2010
